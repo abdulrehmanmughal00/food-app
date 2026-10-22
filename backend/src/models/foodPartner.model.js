@@ -13,9 +13,10 @@ const foodPartnerSchema = new mongoose.Schema({
     trim: true,
     unique: true,
   },
-  password: {
+ password: {
     type: String,
-    required: true,
+    required: [true, "Password is required"],
+    minlength: [8, "Password must be at least 8 characters long"],
   },
 });
 
