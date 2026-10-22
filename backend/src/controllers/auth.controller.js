@@ -108,10 +108,10 @@ const logoutUser = async (req, res) => {
 //! for food food Partner
 const registerPartner = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { buisnessName, email, password, contact, address } = req.body;
 
     const isUserAlreadyExist = await foodPartnerModel.findOne({
-      $or: [{ username }, { email }],
+      $or: [{ buisnessName }, { email }],
     });
 
     if (isUserAlreadyExist) {
@@ -121,9 +121,11 @@ const registerPartner = async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     const createPartner = await foodPartnerModel.create({
-      username,
+      buisnessName,
       email,
       password: hash,
+      address,
+      contact,
     });
 
     const token = jwt.sign(
@@ -137,8 +139,10 @@ const registerPartner = async (req, res) => {
       message: "food partner registered sucessfully",
       createPartner: {
         _id: createPartner._id,
-        username: createPartner.username,
+        buisnessName: createPartner.buisnessName,
         email: createPartner.email,
+        address: createPartner.address,
+        contact: createPartner.contact,
       },
     });
   } catch (error) {
@@ -151,10 +155,10 @@ const registerPartner = async (req, res) => {
 
 const loginPartner = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { buisnessName, email, password ,contact} = req.body;
 
     const user = await foodPartnerModel.findOne({
-      $or: [{ username }, { email }],
+      $or: [{ contact }, { email }],
     });
 
     if (!user) {
@@ -176,8 +180,10 @@ const loginPartner = async (req, res) => {
       message: "food partner login sucessfully",
       user: {
         _id: user._id,
-        username: user.username,
+        buisnessName: user.buisnessName,
         email: user.email,
+        contact: user.contact,
+        address: user.address,
       },
     });
   } catch (error) {
