@@ -59,13 +59,17 @@ const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: "invalid credintials  " });
+      return res
+        .status(400)
+        .json({ message: "Invalid email/username or password" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(400).json({ message: "unvalid email or username " });
+      return res.status(401).json({
+        message: "Invalid email/username or password",
+      });
     }
 
     const token = jwt.sign(
@@ -155,7 +159,7 @@ const registerPartner = async (req, res) => {
 
 const loginPartner = async (req, res) => {
   try {
-    const { buisnessName, email, password ,contact} = req.body;
+    const { buisnessName, email, password, contact } = req.body;
 
     const user = await foodPartnerModel.findOne({
       $or: [{ contact }, { email }],

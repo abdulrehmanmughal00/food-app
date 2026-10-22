@@ -11,9 +11,12 @@ import {
   Sparkles,
   UserRound,
   UtensilsCrossed,
+  LoaderCircle,
 } from "lucide-react";
-
+import axios from "axios";
+import { toast } from "sonner";
 import styles from "./Register.module.css";
+import { useState } from "react";
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -33,6 +36,65 @@ const itemVariants = {
 };
 
 export default function RegisterPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (loading) return;
+
+    if (!username.trim() || !email.trim() || !password) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:4000/api/auth/user/register",
+        {
+          email: email.trim(),
+          username: username.trim(),
+          password,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      toast.success(response.data?.message || "Account created successfully!");
+
+      setEmail("");
+      setUsername("");
+      setPassword("");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+
+        if (typeof message === "string" && message.trim()) {
+          toast.error(message);
+        } else if (!error.response) {
+          toast.error("Unable to connect to server. Please try again.");
+        } else {
+          toast.error("Registration failed. Please try again.");
+        }
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className={styles.page}>
       <div className={styles.backgroundGlow} />
@@ -46,17 +108,15 @@ export default function RegisterPage() {
       >
         {/* LEFT: BRANDING */}
 
-        <motion.section
-          className={styles.hero}
-          variants={itemVariants}
-        >
+        <motion.section className={styles.hero} variants={itemVariants}>
           <Link href="/" className={styles.logo}>
             <span className={styles.logoIcon}>
               <UtensilsCrossed size={22} strokeWidth={2.2} />
             </span>
 
             <span>
-              food<span className={styles.logoAccent}>verse</span>
+              food
+              <span className={styles.logoAccent}>verse</span>
               <span className={styles.logoDot}>.</span>
             </span>
           </Link>
@@ -76,13 +136,16 @@ export default function RegisterPage() {
             </h1>
 
             <p className={styles.heroDescription}>
-              Discover incredible food, explore local favourites,
-              and find your next unforgettable bite.
+              Discover incredible food, explore local favourites, and find your
+              next unforgettable bite.
             </p>
 
             <motion.div
               className={styles.featureCard}
-              whileHover={{ y: -5, borderColor: "rgba(199,243,107,0.3)" }}
+              whileHover={{
+                y: -5,
+                borderColor: "rgba(199,243,107,0.3)",
+              }}
               transition={{ duration: 0.25 }}
             >
               <div className={styles.featureTop}>
@@ -94,10 +157,7 @@ export default function RegisterPage() {
                   THE FOODVERSE EXPERIENCE
                 </span>
 
-                <ArrowDownRight
-                  size={19}
-                  className={styles.featureArrow}
-                />
+                <ArrowDownRight size={19} className={styles.featureArrow} />
               </div>
 
               <div className={styles.featureTitle}>
@@ -127,10 +187,7 @@ export default function RegisterPage() {
 
         {/* RIGHT: REGISTER FORM */}
 
-        <motion.section
-          className={styles.formSection}
-          variants={itemVariants}
-        >
+        <motion.section className={styles.formSection} variants={itemVariants}>
           <div className={styles.formHeader}>
             <span className={styles.formStep}>GET STARTED</span>
 
@@ -141,23 +198,21 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.formHeading}>
-            <h2>Create your account<span>.</span></h2>
+            <h2>
+              Create your account<span>.</span>
+            </h2>
 
-            <p>
-              Join the community. Your next favourite meal
-              is waiting.
-            </p>
+            <p>Join the community. Your next favourite meal is waiting.</p>
           </div>
 
-          <form className={styles.form}>
+          <form className={styles.form} onSubmit={submitHandler}>
+            {/* USERNAME */}
+
             <div className={styles.field}>
               <label htmlFor="username">Username</label>
 
               <div className={styles.inputWrapper}>
-                <UserRound
-                  size={18}
-                  className={styles.inputIcon}
-                />
+                <UserRound size={18} className={styles.inputIcon} />
 
                 <input
                   id="username"
@@ -166,18 +221,19 @@ export default function RegisterPage() {
                   placeholder="Choose a username"
                   autoComplete="username"
                   required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
             </div>
+
+            {/* EMAIL */}
 
             <div className={styles.field}>
               <label htmlFor="email">Email address</label>
 
               <div className={styles.inputWrapper}>
-                <Mail
-                  size={18}
-                  className={styles.inputIcon}
-                />
+                <Mail size={18} className={styles.inputIcon} />
 
                 <input
                   id="email"
@@ -186,9 +242,13 @@ export default function RegisterPage() {
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
+
+            {/* PASSWORD */}
 
             <div className={styles.field}>
               <div className={styles.labelRow}>
@@ -197,10 +257,7 @@ export default function RegisterPage() {
               </div>
 
               <div className={styles.inputWrapper}>
-                <LockKeyhole
-                  size={18}
-                  className={styles.inputIcon}
-                />
+                <LockKeyhole size={18} className={styles.inputIcon} />
 
                 <input
                   id="password"
@@ -210,6 +267,8 @@ export default function RegisterPage() {
                   autoComplete="new-password"
                   minLength={8}
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -219,13 +278,21 @@ export default function RegisterPage() {
               <span>Use at least 8 characters.</span>
             </div>
 
+            {/* SUBMIT BUTTON */}
+
             <button
               type="submit"
               className={styles.submitButton}
+              disabled={loading}
             >
-              <span>Create account</span>
+              <span>{loading ? "Creating account..." : "Create account"}</span>
+
               <span className={styles.buttonArrow}>
-                <ArrowRight size={19} />
+                {loading ? (
+                  <LoaderCircle size={19} className={styles.loadingIcon} />
+                ) : (
+                  <ArrowRight size={19} />
+                )}
               </span>
             </button>
           </form>
@@ -250,11 +317,6 @@ export default function RegisterPage() {
           </p>
         </motion.section>
       </motion.div>
-
-      <footer className={styles.pageFooter}>
-        <span>© 2026 FOODVERSE</span>
-        <span>GOOD TASTE STARTS HERE.</span>
-      </footer>
     </main>
   );
 }

@@ -3,18 +3,19 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import axios from "axios";
+import { toast } from "sonner";
 import {
   ArrowDownRight,
   ArrowRight,
-  Check,
   Eye,
   EyeOff,
   LockKeyhole,
   Mail,
   Sparkles,
   UtensilsCrossed,
+  LoaderCircle,
 } from "lucide-react";
-
 import styles from "./Login.module.css";
 
 const pageVariants = {
@@ -36,11 +37,58 @@ const itemVariants = {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // UI only. Login logic baad mein khud likhna.
+    if (loading) return;
+
+    if (!identifier.trim() || !password) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const loginData = identifier.trim().includes("@")
+        ? { email: identifier.trim(), password }
+        : { username: identifier.trim(), password };
+
+      const response = await axios.post(
+        "http://localhost:4000/api/auth/user/login",
+        loginData,
+        {
+          withCredentials: true,
+        },
+      );
+
+      toast.success(response.data?.message || "Login successful!");
+
+      setIdentifier("");
+      setPassword("");
+
+      
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+
+        if (typeof message === "string" && message.trim()) {
+          toast.error(message);
+        } else if (!error.response) {
+          toast.error("Cannot connect to server. Please try again.");
+        } else {
+          toast.error("Login failed. Please try again.");
+        }
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -155,22 +203,28 @@ export default function LoginPage() {
           </div>
 
           <form className={styles.form} onSubmit={handleSubmit}>
+            {/* EMAIL / USERNAME */}
+
             <div className={styles.field}>
-              <label htmlFor="email">Email / Username </label>
+              <label htmlFor="identifier">Email / Username</label>
 
               <div className={styles.inputWrapper}>
                 <Mail size={18} className={styles.inputIcon} />
 
                 <input
-                  id="email"
-                  name="email"
+                  id="identifier"
+                  name="identifier"
                   type="text"
                   placeholder="manomughalll / you@example.com"
                   autoComplete="username"
                   required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                 />
               </div>
             </div>
+
+            {/* PASSWORD */}
 
             <div className={styles.field}>
               <div className={styles.labelRow}>
@@ -187,6 +241,8 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
 
                 <button
@@ -200,11 +256,23 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" className={styles.submitButton}>
-              <span>Sign in to your account</span>
+            {/* SUBMIT */}
+
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={loading}
+            >
+              <span>
+                {loading ? "Signing in..." : "Sign in to your account"}
+              </span>
 
               <span className={styles.buttonArrow}>
-                <ArrowRight size={19} />
+                {loading ? (
+                  <LoaderCircle size={19} className={styles.loadingIcon} />
+                ) : (
+                  <ArrowRight size={19} />
+                )}
               </span>
             </button>
           </form>
