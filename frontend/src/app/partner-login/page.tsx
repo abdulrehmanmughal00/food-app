@@ -1,14 +1,17 @@
-
 "use client";
 
 import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import axios from "axios";
+import { toast } from "sonner";
+
 import {
   ArrowDownRight,
   ArrowRight,
   Eye,
   EyeOff,
+  LoaderCircle,
   LockKeyhole,
   ShieldCheck,
   Sparkles,
@@ -16,6 +19,7 @@ import {
   UtensilsCrossed,
   UserRound,
 } from "lucide-react";
+
 import styles from "./PartnerLogin.module.css";
 
 const pageVariants = {
@@ -41,21 +45,69 @@ const itemVariants = {
 export default function PartnerLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
+    if (loading) return;
 
-    const data = {
-      identifier: String(formData.get("identifier") || "").trim(),
-      password: String(formData.get("password") || ""),
-      rememberMe,
-    };
+    const trimmedIdentifier = identifier.trim();
 
-    // Backend API integration yahan karna.
-    // Password ko console mein log mat karna.
-    console.log("Partner login identifier:", data.identifier);
+    if (!trimmedIdentifier || !password) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    const isEmail = trimmedIdentifier.includes("@");
+
+    if (!isEmail && !/^03\d{9}$/.test(trimmedIdentifier)) {
+      toast.error("Invalid credentials or login failed.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const loginData = isEmail
+        ? {
+            email: trimmedIdentifier,
+            password,
+          }
+        : {
+            contact: trimmedIdentifier,
+            password,
+          };
+
+      const response = await axios.post(
+        "http://localhost:4000/api/auth/partner/login",
+        loginData,
+        {
+          withCredentials: true,
+        },
+      );
+
+      toast.success(response.data?.message || "Partner login successful!");
+
+      setIdentifier("");
+      setPassword("");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.log("STATUS:", error.response?.status);
+        console.log("BACKEND ERROR:", error.response?.data);
+
+        toast.error(
+          error.response?.data?.message ||
+            `Login failed (${error.response?.status || "Network error"})`,
+        );
+      } else {
+        toast.error("Something went wrong");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,14 +122,13 @@ export default function PartnerLoginPage() {
         animate="visible"
       >
         {/* LEFT HERO */}
-        <motion.section
-          className={styles.hero}
-          variants={itemVariants}
-        >
+
+        <motion.section className={styles.hero} variants={itemVariants}>
           <Link href="/" className={styles.logo}>
             <span className={styles.logoIcon}>
               <UtensilsCrossed size={22} strokeWidth={2.2} />
             </span>
+
             <span>
               food
               <span className={styles.logoAccent}>verse</span>
@@ -94,17 +145,14 @@ export default function PartnerLoginPage() {
             <h1 className={styles.heroTitle}>
               Welcome back.
               <br />
-              <span className={styles.titleAccent}>
-                Let's grow
-              </span>
+              <span className={styles.titleAccent}>Let&apos;s grow</span>
               <br />
               together.
             </h1>
 
             <p className={styles.heroDescription}>
-              Your business journey continues here.
-              Sign in to your Foodverse partner account
-              and get back to what you do best.
+              Your business journey continues here. Sign in to your Foodverse
+              partner account and get back to what you do best.
             </p>
 
             <motion.div
@@ -124,10 +172,7 @@ export default function PartnerLoginPage() {
                   YOUR PARTNER JOURNEY
                 </span>
 
-                <ArrowDownRight
-                  size={19}
-                  className={styles.featureArrow}
-                />
+                <ArrowDownRight size={19} className={styles.featureArrow} />
               </div>
 
               <div className={styles.featureTitle}>
@@ -141,10 +186,7 @@ export default function PartnerLoginPage() {
                   <Store size={18} />
                 </div>
 
-                <p>
-                  Everything your business needs,
-                  in one place.
-                </p>
+                <p>Everything your business needs, in one place.</p>
               </div>
             </motion.div>
 
@@ -157,14 +199,10 @@ export default function PartnerLoginPage() {
         </motion.section>
 
         {/* RIGHT LOGIN FORM */}
-        <motion.section
-          className={styles.formSection}
-          variants={itemVariants}
-        >
+
+        <motion.section className={styles.formSection} variants={itemVariants}>
           <div className={styles.formHeader}>
-            <span className={styles.formStep}>
-              PARTNER ACCESS
-            </span>
+            <span className={styles.formStep}>PARTNER ACCESS</span>
 
             <span className={styles.secureLabel}>
               <ShieldCheck size={14} />
@@ -176,45 +214,37 @@ export default function PartnerLoginPage() {
             <h2>
               Partner sign in<span>.</span>
             </h2>
-            <p>
-              Enter your credentials to access
-              your business account.
-            </p>
+
+            <p>Enter your credentials to access your business account.</p>
           </div>
 
-          <form
-            className={styles.form}
-            onSubmit={handleSubmit}
-          >
+          <form className={styles.form} onSubmit={handleSubmit}>
             {/* EMAIL OR CONTACT */}
+
             <div className={styles.field}>
-              <label htmlFor="identifier">
-                Email or contact number
-              </label>
+              <label htmlFor="identifier">Email or contact number</label>
 
               <div className={styles.inputWrapper}>
-                <UserRound
-                  size={18}
-                  className={styles.inputIcon}
-                />
+                <UserRound size={18} className={styles.inputIcon} />
 
                 <input
                   id="identifier"
                   name="identifier"
                   type="text"
-                  placeholder="business@example.com / +92 300 1234567"
+                  placeholder="business@example.com / 03001234567"
                   autoComplete="username"
                   required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                 />
               </div>
             </div>
 
             {/* PASSWORD */}
+
             <div className={styles.field}>
               <div className={styles.labelRow}>
-                <label htmlFor="password">
-                  Password
-                </label>
+                <label htmlFor="password">Password</label>
 
                 <Link
                   href="/partner-forgot-password"
@@ -225,10 +255,7 @@ export default function PartnerLoginPage() {
               </div>
 
               <div className={styles.inputWrapper}>
-                <LockKeyhole
-                  size={18}
-                  className={styles.inputIcon}
-                />
+                <LockKeyhole size={18} className={styles.inputIcon} />
 
                 <input
                   id="password"
@@ -237,49 +264,51 @@ export default function PartnerLoginPage() {
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
 
                 <button
                   type="button"
                   className={styles.passwordToggle}
-                  onClick={() =>
-                    setShowPassword((prev) => !prev)
-                  }
-                  aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   aria-pressed={showPassword}
                 >
-                  {showPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
+
+            {/* REMEMBER ME */}
 
             <label className={styles.rememberRow}>
               <input
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) =>
-                  setRememberMe(e.target.checked)
-                }
+                onChange={(e) => setRememberMe(e.target.checked)}
               />
+
               <span>Remember me</span>
             </label>
+
+            {/* SUBMIT BUTTON */}
 
             <button
               type="submit"
               className={styles.submitButton}
+              disabled={loading}
             >
-              <span>Sign in to your account</span>
+              <span>
+                {loading ? "Signing in..." : "Sign in to your account"}
+              </span>
 
               <span className={styles.buttonArrow}>
-                <ArrowRight size={19} />
+                {loading ? (
+                  <LoaderCircle size={19} className={styles.loadingIcon} />
+                ) : (
+                  <ArrowRight size={19} />
+                )}
               </span>
             </button>
           </form>
@@ -292,10 +321,7 @@ export default function PartnerLoginPage() {
 
           <p className={styles.registerText}>
             New to Foodverse?{" "}
-            <Link
-              href="/partner-register"
-              className={styles.registerLink}
-            >
+            <Link href="/partner-register" className={styles.registerLink}>
               Become a partner
               <ArrowRight size={14} />
             </Link>
@@ -303,14 +329,8 @@ export default function PartnerLoginPage() {
 
           <p className={styles.terms}>
             By signing in, you agree to our{" "}
-            <Link href="/terms">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy">
-              Privacy Policy
-            </Link>
-            .
+            <Link href="/terms">Terms of Service</Link> and{" "}
+            <Link href="/privacy">Privacy Policy</Link>.
           </p>
         </motion.section>
       </motion.div>

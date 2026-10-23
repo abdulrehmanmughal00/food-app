@@ -112,10 +112,10 @@ const logoutUser = async (req, res) => {
 //! for food food Partner
 const registerPartner = async (req, res) => {
   try {
-    const { buisnessName, email, password, contact, address } = req.body;
+    const { businessName, email, password, contact, address } = req.body;
 
     const isUserAlreadyExist = await foodPartnerModel.findOne({
-      $or: [{ buisnessName }, { email }],
+      $or: [{ businessName }, { email }],
     });
 
     if (isUserAlreadyExist) {
@@ -125,7 +125,7 @@ const registerPartner = async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     const createPartner = await foodPartnerModel.create({
-      buisnessName,
+      businessName,
       email,
       password: hash,
       address,
@@ -143,7 +143,7 @@ const registerPartner = async (req, res) => {
       message: "food partner registered sucessfully",
       createPartner: {
         _id: createPartner._id,
-        buisnessName: createPartner.buisnessName,
+        businessName: createPartner.businessName,
         email: createPartner.email,
         address: createPartner.address,
         contact: createPartner.contact,
@@ -159,7 +159,7 @@ const registerPartner = async (req, res) => {
 
 const loginPartner = async (req, res) => {
   try {
-    const { buisnessName, email, password, contact } = req.body;
+    const { businessName, email, password, contact } = req.body;
 
     const user = await foodPartnerModel.findOne({
       $or: [{ contact }, { email }],
@@ -184,7 +184,7 @@ const loginPartner = async (req, res) => {
       message: "food partner login sucessfully",
       user: {
         _id: user._id,
-        buisnessName: user.buisnessName,
+        businessName: user.businessName,
         email: user.email,
         contact: user.contact,
         address: user.address,
