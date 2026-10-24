@@ -24,7 +24,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         {children}
-        <Footer />
         <Toaster
           position="top-right"
           richColors
